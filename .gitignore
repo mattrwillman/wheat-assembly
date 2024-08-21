@@ -1,6 +1,14 @@
 # Snakemake output
 results/*
 logs/*
+.snakemake
+
+
+# Any .stout or .stderr
+*stderr*
+*STDERR*
+*stdout*
+*STDOUT*
 
 # History files
 .Rhistory
