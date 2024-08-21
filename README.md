@@ -24,7 +24,7 @@ Or, run snakemake locally.
 snakemake --cores 'all' --configfile config/config.yml
 ```
 
-### Example SLURM file
+### SLURM file
 
 Example SLURM file named "snakemake.slurm":
 
