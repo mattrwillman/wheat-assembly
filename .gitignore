@@ -3,6 +3,8 @@ results/*
 logs/*
 .snakemake
 
+# slurm script files
+*.slurm
 
 # Any .stout or .stderr
 *stderr*
