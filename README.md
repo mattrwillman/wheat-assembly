@@ -21,7 +21,7 @@ sbatch snakemake.slurm
 Or, run snakemake locally.
 
 ```
-snakemake --cores 'all' --configfile config/config.yml
+snakemake [--cores N] --configfile config/config.yml
 ```
 
 ### SLURM file
