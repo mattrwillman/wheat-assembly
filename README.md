@@ -8,7 +8,7 @@ source activate assembly_env
 conda install snakemake pbtk cutadapt hifiasm ragtag r-pafr
 ```
 
-2. Clone the repository and edit config.yaml and snakemake_batch.sh files to fit your job.
+2. Clone the repository and edit config/config.yaml to fit your job.
 
 3. Run [snakemake](https://snakemake.readthedocs.io/en/stable/).
 
