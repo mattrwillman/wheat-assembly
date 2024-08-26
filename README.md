@@ -31,7 +31,7 @@ Example SLURM file named "snakemake.slurm":
 ```
 #!/bin/bash
 #SBATCH --job-name="assembly"		#name of the job submitted
-#SBATCH -p nodeName			#name of the queue you are submitting job to
+#SBATCH -p nodeName			#enter name of the queue you are submitting job to
 #SBATCH -A project			#enter your project neame
 #SBATCH -N 1				#number of nodes in this job
 #SBATCH -n 48				#number of cores/tasks in this job
