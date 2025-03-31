@@ -1,12 +1,12 @@
-prefix: /project/gbru_wheat2/fhb/conda/assembly_env
+prefix: /project/gbru_wheat2/conda/assembly_env
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
   - snakemake
-  - pbtk
-  - cutadapt
-  - hifiasm
-  - ragtag
-  - r-pafr
+  - pbtk=3.1.1
+  - cutadapt=4.8
+  - hifiasm=0.19.9
+  - ragtag=2.1.0
+  - r-pafr=0.0.2
