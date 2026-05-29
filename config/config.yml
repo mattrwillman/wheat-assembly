@@ -1,0 +1,15 @@
+ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
+
+genotypes:
+  AGS2000:
+    pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/AGS2000/Bam"
+  Hilliard:
+    pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/Hilliard/Bam"
+  IL02-18228:
+    pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/IL02-18228/Bam"
+  Jagger:
+    pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/Jagger/Bam"
+  LA03136E71:
+    pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/LA03136E71"
+  MO080104:
+    pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/MO080104/Bam"

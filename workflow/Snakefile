@@ -1,55 +1,91 @@
-GENOTYPE = config['GENOTYPE']
-PACBIO_DIR = config['PACBIO_DIR']
-RAGTAG_REF = config['RAGTAG_REF']
+import os
 
-wildcards = glob_wildcards(config['PACBIO_DIR'] + "/{sample}.bam")
-SAMPLES = wildcards.sample
+RAGTAG_REF = config['ragtag_ref']
+GENOTYPES  = list(config['genotypes'].keys())
+
+GENOTYPE_SAMPLES = {}
+for gt in GENOTYPES:
+    wc = glob_wildcards(config['genotypes'][gt]['pacbio_dir'] + "/{sample}.bam")
+    GENOTYPE_SAMPLES[gt] = wc.sample
+
+
+def get_bam(wildcards):
+    pacbio_dir = config['genotypes'][wildcards.genotype]['pacbio_dir']
+    return os.path.join(pacbio_dir, f"{wildcards.sample}.bam")
+
+
+def get_trimmed_fastqs(wildcards):
+    return expand(
+        "results/{genotype}/trimmed_filtered/{sample}.fastq",
+        genotype=wildcards.genotype,
+        sample=GENOTYPE_SAMPLES[wildcards.genotype],
+    )
+
+
+onstart:
+    shell("mkdir -p logs/slurm")
+
 
 rule all:
     input:
-        expand("results/{genotype}.ragtag.scaffold.fa", genotype = GENOTYPE), 
-        expand("results/plots/{genotype}_ragtag_alignment_coverage.png", genotype = GENOTYPE)
+        expand("results/{genotype}.ragtag.scaffold.fa", genotype=GENOTYPES),
+        expand("results/plots/{genotype}_ragtag_alignment_coverage.png", genotype=GENOTYPES),
+
 
 rule bam_to_fastq:
     input:
-        expand("{dir}/{{sample}}.bam", dir = PACBIO_DIR)
+        get_bam,
     output:
-        "results/fastq/{sample}.fastq.gz"
+        "results/{genotype}/fastq/{sample}.fastq.gz",
     params:
-        outprefix = "results/fastq/{sample}"
+        outprefix="results/{genotype}/fastq/{sample}",
     log:
-        "logs/bam_to_fastq/{sample}.log"
+        "logs/bam_to_fastq/{genotype}/{sample}.log",
     threads: 12
+    resources:
+        mem_mb=16000,
+        runtime=240,
+        partition="atlas",
     shell:
         "bam2fastq -j {threads} -c 1 -o {params.outprefix} {input} 2> {log}"
 
+
 rule filter_adapter:
     input:
-        "results/fastq/{sample}.fastq.gz"
+        "results/{genotype}/fastq/{sample}.fastq.gz",
     output:
-        "results/filtered/{sample}.fastq"
+        "results/{genotype}/filtered/{sample}.fastq",
     log:
-        "logs/filter_adapter/{sample}.log"
+        "logs/filter_adapter/{genotype}/{sample}.log",
     threads: 12
+    resources:
+        mem_mb=16000,
+        runtime=480,
+        partition="atlas",
     shell:
         """
-            cutadapt -j {threads} --revcomp -e 0.1 --discard-trimmed \
+        cutadapt -j {threads} --revcomp -e 0.1 --discard-trimmed \
             -b "AAAAAAAAAAAAAAAAAATTAACGGAGGAGGAGGA;min_overlap=34" \
             -b "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT;min_overlap=40" \
             {input} > {output} 2> {log}
         """
 
+
 rule trim_adapter:
     input:
-        "results/filtered/{sample}.fastq", 
+        "results/{genotype}/filtered/{sample}.fastq",
     output:
-        "results/trimmed_filtered/{sample}.fastq"
+        "results/{genotype}/trimmed_filtered/{sample}.fastq",
     log:
-        "logs/trim_adapter/{sample}.log"
+        "logs/trim_adapter/{genotype}/{sample}.log",
     threads: 12
+    resources:
+        mem_mb=16000,
+        runtime=480,
+        partition="atlas",
     shell:
         """
-            cutadapt -j {threads} --revcomp -e 0.1 \
+        cutadapt -j {threads} --revcomp -e 0.1 \
             -a "AAAAAAAAAAAAAAAAAATTAACGGAGGAGGAGGA;min_overlap=16" \
             -g "AAAAAAAAAAAAAAAAAATTAACGGAGGAGGAGGA;min_overlap=16" \
             -a "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT;min_overlap=16" \
@@ -57,69 +93,96 @@ rule trim_adapter:
             {input} > {output} 2> {log}
         """
 
+
 rule assemble_contigs:
     input:
-        expand("results/trimmed_filtered/{sample}.fastq", sample = SAMPLES)
+        get_trimmed_fastqs,
     output:
-        "results/hifiasm/hifiasm.asm.bp.p_ctg.gfa"
+        "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.gfa",
     params:
-        prefix = "results/hifiasm/hifiasm.asm"
+        prefix="results/{genotype}/hifiasm/hifiasm.asm",
     log:
-        "logs/assemble_contigs.log"
+        "logs/assemble_contigs/{genotype}.log",
     threads: 48
+    resources:
+        mem_mb=500000,
+        runtime=10080,
+        partition="bigmem",
     shell:
         "hifiasm -t {threads} -l0 -i -f38 -o {params.prefix} {input} 2> {log}"
 
+
 rule extract_fasta:
     input:
-        "results/hifiasm/hifiasm.asm.bp.p_ctg.gfa"
+        "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.gfa",
     output:
-        "results/hifiasm/hifiasm.asm.bp.p_ctg.fasta"
+        "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fasta",
     log:
-        "logs/extract_fasta.log"
+        "logs/extract_fasta/{genotype}.log",
+    resources:
+        mem_mb=4000,
+        runtime=30,
+        partition="atlas",
     shell:
         "python workflow/scripts/gfa_to_fasta.py {input} {output} 2> {log}"
 
+
 rule scaffold_contigs:
     input:
-        contigs = "results/hifiasm/hifiasm.asm.bp.p_ctg.fasta", 
-        ref = RAGTAG_REF
+        contigs="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fasta",
+        ref=RAGTAG_REF,
     output:
         multiext(
-            "results/ragtag/ragtag.scaffold", 
-            ".agp", 
-            ".asm.paf", 
-            ".asm.paf.log", 
-            ".confidence.txt", 
-            ".err", 
-            ".fasta", 
-            ".stats", 
-        )
+            "results/{genotype}/ragtag/ragtag.scaffold",
+            ".agp",
+            ".asm.paf",
+            ".asm.paf.log",
+            ".confidence.txt",
+            ".err",
+            ".fasta",
+            ".stats",
+        ),
     params:
-        outdir = "results/ragtag"
+        outdir="results/{genotype}/ragtag",
     log:
-        "logs/scaffold_contigs.log"
+        "logs/scaffold_contigs/{genotype}.log",
     threads: 48
+    resources:
+        mem_mb=250000,
+        runtime=2880,
+        partition="bigmem",
     shell:
         "ragtag.py scaffold --mm2-params '-I 200g -x asm5' -t {threads} "
         "-o {params.outdir} {input.ref} {input.contigs} 2> {log}"
 
+
 rule rename_assembly:
     input:
-        "results/ragtag/ragtag.scaffold.fasta"
+        "results/{genotype}/ragtag/ragtag.scaffold.fasta",
     output:
-        "results/{genotype}.ragtag.scaffold.fa"
+        "results/{genotype}.ragtag.scaffold.fa",
+    resources:
+        mem_mb=4000,
+        runtime=30,
+        partition="atlas",
     shell:
         "cp {input} {output}"
 
+
 rule plot_coverage:
     input:
-        paf = "results/ragtag/ragtag.scaffold.asm.paf"
+        paf="results/{genotype}/ragtag/ragtag.scaffold.asm.paf",
     output:
-        pdf = "results/plots/{genotype}_ragtag_alignment_coverage.pdf",
-        png = "results/plots/{genotype}_ragtag_alignment_coverage.png",
-        tsv = "results/plots/{genotype}_ragtag_alignment_coverage.tsv"
+        pdf="results/plots/{genotype}_ragtag_alignment_coverage.pdf",
+        png="results/plots/{genotype}_ragtag_alignment_coverage.png",
+        tsv="results/plots/{genotype}_ragtag_alignment_coverage.tsv",
     params:
-        prefix = "results/plots/{genotype}_ragtag_alignment"
+        prefix="results/plots/{genotype}_ragtag_alignment",
+    log:
+        "logs/plot_coverage/{genotype}.log",
+    resources:
+        mem_mb=16000,
+        runtime=60,
+        partition="atlas",
     shell:
-        "Rscript workflow/scripts/plot_paf_coverage.R {input.paf} {params.prefix}"
+        "Rscript workflow/scripts/plot_paf_coverage.R {input.paf} {params.prefix} 2> {log}"
