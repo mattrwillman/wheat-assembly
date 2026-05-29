@@ -5,6 +5,7 @@ channels:
   - defaults
 dependencies:
   - snakemake
+  - snakemake-executor-plugin-cluster-generic
   - pbtk
   - cutadapt=4.8
   - hifiasm=0.25
