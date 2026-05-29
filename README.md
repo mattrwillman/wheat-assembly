@@ -35,8 +35,11 @@ BAM files are discovered automatically via glob from each `pacbio_dir`.
 Start a `tmux` session on the login node, then run:
 
 ```bash
+tmux new -s assembly
 bash snakemake_batch.sh
 ```
+
+See the comments in `snakemake_batch.sh` for a tmux quick reference (attach, detach, list sessions).
 
 This activates the conda environment and submits each rule as a separate SLURM job via the profile in `profiles/slurm/`. Snakemake output is saved to a timestamped log file (`logs/snakemake_YYYYMMDD_HHMMSS.log`) so each run's output is preserved. Jobs are routed to the appropriate partition automatically:
 
