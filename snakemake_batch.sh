@@ -4,4 +4,7 @@
 module load miniconda3
 source activate /project/gbru_wheat2/conda/assembly_env
 
-snakemake --profile profiles/slurm --configfile config/config.yml
+mkdir -p logs
+LOG="logs/snakemake_$(date +%Y%m%d_%H%M%S).log"
+
+snakemake --profile profiles/slurm --configfile config/config.yml 2>&1 | tee "$LOG"
