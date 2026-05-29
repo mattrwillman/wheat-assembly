@@ -8,7 +8,7 @@ SAMPLES = wildcards.sample
 rule all:
     input:
         expand("results/{genotype}.ragtag.scaffold.fa", genotype = GENOTYPE), 
-        expand("results/plots/{genotype}_ragtag_alignment.jpeg", genotype = GENOTYPE)
+        expand("results/plots/{genotype}_ragtag_alignment_coverage.png", genotype = GENOTYPE)
 
 rule bam_to_fastq:
     input:
@@ -116,6 +116,10 @@ rule plot_coverage:
     input:
         paf = "results/ragtag/ragtag.scaffold.asm.paf"
     output:
-        plot = "results/plots/{genotype}_ragtag_alignment.jpeg"
+        pdf = "results/plots/{genotype}_ragtag_alignment_coverage.pdf",
+        png = "results/plots/{genotype}_ragtag_alignment_coverage.png",
+        tsv = "results/plots/{genotype}_ragtag_alignment_coverage.tsv"
+    params:
+        prefix = "results/plots/{genotype}_ragtag_alignment"
     shell:
-        "Rscript workflow/scripts/plot_coverage.R {input.paf} {output.plot}"
+        "Rscript workflow/scripts/plot_paf_coverage.R {input.paf} {params.prefix}"

@@ -9,4 +9,9 @@ dependencies:
   - cutadapt=4.8
   - hifiasm=0.19.9
   - ragtag=2.1.0
-  - r-pafr=0.0.2
+  - r-gggenomes
+  - bioconductor-iranges
+  - r-dplyr
+  - r-tidyr
+  - r-ggplot2
+  - r-readr
