@@ -50,8 +50,10 @@ rule trim_adapter:
     shell:
         """
             cutadapt -j {threads} --revcomp -e 0.1 \
-            -b AAAAAAAAAAAAAAAAAATTAACGGAGGAGGAGGA \
-            -b ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT \
+            -a "AAAAAAAAAAAAAAAAAATTAACGGAGGAGGAGGA;min_overlap=16" \
+            -g "AAAAAAAAAAAAAAAAAATTAACGGAGGAGGAGGA;min_overlap=16" \
+            -a "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT;min_overlap=16" \
+            -g "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT;min_overlap=16" \
             {input} > {output} 2> {log}
         """
 
@@ -60,11 +62,11 @@ rule assemble_contigs:
         expand("results/trimmed_filtered/{sample}.fastq", sample = SAMPLES)
     output:
         "results/hifiasm/hifiasm.asm.bp.p_ctg.gfa"
+    params:
+        prefix = "results/hifiasm/hifiasm.asm"
     log:
         "logs/assemble_contigs.log"
     threads: 48
-    params:
-        prefix = "results/hifiasm/hifiasm.asm"
     shell:
         "hifiasm -t {threads} -l0 -i -f38 -o {params.prefix} {input} 2> {log}"
 
