@@ -1,52 +1,72 @@
 # Wheat assembly workflow
 
-1. Install software into a conda environment.
+Snakemake workflow for assembling wheat genomes from PacBio HiFi reads and scaffolding against a reference. Runs all genotypes in parallel via SLURM on the Atlas HPC.
 
-```
-conda create --name assembly_env
-source activate assembly_env
-conda install snakemake pbtk cutadapt hifiasm ragtag r-pafr
-```
+## Pipeline steps
 
-2. Clone the repository and edit config/config.yaml to fit your job.
+1. Convert BAM → FASTQ (`pbtk bam2fastq`)
+2. Filter and trim SMRTbell adapters (`cutadapt`)
+3. Assemble contigs (`hifiasm`)
+4. Scaffold against reference (`ragtag`)
+5. Plot alignment coverage (`gggenomes`)
 
-3. Run [snakemake](https://snakemake.readthedocs.io/en/stable/).
+## Setup
 
-Use batch script to submit job to SLURM. See example script below.
+1. Create the conda environment:
 
-```
-sbatch snakemake.slurm
-```
-
-Or, run snakemake locally.
-
-```
-snakemake [--cores N] --configfile config/config.yml
+```bash
+conda env create -f workflow/envs/assembly_env.yml
 ```
 
-### SLURM file
+2. Clone the repository and edit `config/config.yml`:
 
-Example SLURM file named "snakemake.slurm":
+```yaml
+ragtag_ref: "/path/to/reference.fasta"
+
+genotypes:
+  MyGenotype:
+    pacbio_dir: "/path/to/bam/files"
+```
+
+BAM files are discovered automatically via glob from each `pacbio_dir`.
+
+## Running on Atlas (SLURM)
+
+Start a `tmux` session on the login node, then run:
+
+```bash
+bash snakemake_batch.sh
+```
+
+This activates the conda environment and submits each rule as a separate SLURM job via the profile in `profiles/slurm/`. Jobs are routed to the appropriate partition automatically:
+
+| Partition | Rules |
+|-----------|-------|
+| `bigmem`  | `assemble_contigs` (500 GB, 7 days), `scaffold_contigs` (250 GB, 2 days) |
+| `atlas`   | all other rules |
+
+## Running locally
+
+```bash
+source activate /project/gbru_wheat2/conda/assembly_env
+snakemake --cores all --configfile config/config.yml
+```
+
+## Output
+
+Results are written to `results/` namespaced by genotype:
 
 ```
-#!/bin/bash
-#SBATCH --job-name="assembly"		#name of the job submitted
-#SBATCH -p nodeName			#enter name of the queue you are submitting job to
-#SBATCH -A project			#enter your project neame
-#SBATCH -N 1				#number of nodes in this job
-#SBATCH -n 48				#number of cores/tasks in this job
-#SBATCH -t 7-00:00:00			#time allocated for this job hours:mins:seconds
-#SBATCH --mail-user=emailAddress	#enter your email address
-#SBATCH --mail-type=BEGIN,END,FAIL	#you will receive an email when job starts, ends, or fails
-#SBATCH -o "stdout.%x.%j.%N"		#standard output, %x.%j.%N adds job name.number.node to outputfile name
-#SBATCH -e "stderr.%x.%j.%N"		#standard error
-
-# Module load miniconda
-module load miniconda3
-
-# Activate the correct environment
-source activate assembly_env
-
-# Perform the analysis with a pointer to the config file
-snakemake --cores 'all' --configfile config/config.yml
+results/
+  {genotype}/
+    fastq/
+    filtered/
+    trimmed_filtered/
+    hifiasm/
+    ragtag/
+  {genotype}.ragtag.scaffold.fa
+  plots/
+    {genotype}_ragtag_alignment_coverage.pdf
+    {genotype}_ragtag_alignment_coverage.png
+    {genotype}_ragtag_alignment_coverage.tsv
 ```
