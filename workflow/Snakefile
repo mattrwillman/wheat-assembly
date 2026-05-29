@@ -105,7 +105,7 @@ rule assemble_contigs:
         "logs/assemble_contigs/{genotype}.log",
     threads: 48
     resources:
-        mem_mb=500000,
+        mem_mb=1536000,
         runtime=10080,
         partition="bigmem",
     shell:
