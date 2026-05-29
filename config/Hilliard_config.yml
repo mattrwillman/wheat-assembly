@@ -1,3 +1,3 @@
 GENOTYPE: "Hilliard"
 PACBIO_DIR: "/90daydata/gbru_wheat2/PacBio_WGS/Hilliard/Bam"
-RAGTAG_REF: "/project/gbru_wheat2/ref/Attraktion_ENA/Attraktion.rename.fasta"
+RAGTAG_REF: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
