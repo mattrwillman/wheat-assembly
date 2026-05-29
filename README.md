@@ -42,8 +42,10 @@ This activates the conda environment and submits each rule as a separate SLURM j
 
 | Partition | Rules |
 |-----------|-------|
-| `bigmem`  | `assemble_contigs` (500 GB, 7 days), `scaffold_contigs` (250 GB, 2 days) |
+| `bigmem`  | `assemble_contigs` (1536 GB, 7 days), `scaffold_contigs` (250 GB, 2 days) |
 | `atlas`   | all other rules |
+
+Bigmem nodes (48 cores, 1536 GB RAM) are allocated exclusively, so the full node is available to each job.
 
 ## Running locally
 
