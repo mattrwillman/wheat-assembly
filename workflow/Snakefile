@@ -14,9 +14,9 @@ def get_bam(wildcards):
     return os.path.join(pacbio_dir, f"{wildcards.sample}.bam")
 
 
-def get_trimmed_fastqs(wildcards):
+def get_filtered_fastqs(wildcards):
     return expand(
-        "results/{genotype}/trimmed_filtered/{sample}.fastq",
+        "results/{genotype}/hifiadapterfilt/{sample}.filt.fastq.gz",
         genotype=wildcards.genotype,
         sample=GENOTYPE_SAMPLES[wildcards.genotype],
     )
@@ -32,71 +32,29 @@ rule all:
         expand("results/plots/{genotype}_ragtag_alignment_coverage.png", genotype=GENOTYPES),
 
 
-rule bam_to_fastq:
+rule hifiadapterfilt:
     input:
         get_bam,
     output:
-        "results/{genotype}/fastq/{sample}.fastq.gz",
+        fastq="results/{genotype}/hifiadapterfilt/{sample}.filt.fastq.gz",
+        stats="results/{genotype}/hifiadapterfilt/{sample}.stats",
+        blast="results/{genotype}/hifiadapterfilt/{sample}.contaminant.blastout",
     params:
-        outprefix="results/{genotype}/fastq/{sample}",
+        outdir="results/{genotype}/hifiadapterfilt",
     log:
-        "logs/bam_to_fastq/{genotype}/{sample}.log",
-    threads: 12
-    resources:
-        mem_mb=16000,
-        runtime=240,
-        partition="atlas",
-    shell:
-        "bam2fastq -j {threads} -c 1 -o {params.outprefix} {input} 2> {log}"
-
-
-rule filter_adapter:
-    input:
-        "results/{genotype}/fastq/{sample}.fastq.gz",
-    output:
-        "results/{genotype}/filtered/{sample}.fastq",
-    log:
-        "logs/filter_adapter/{genotype}/{sample}.log",
+        "logs/hifiadapterfilt/{genotype}/{sample}.log",
     threads: 12
     resources:
         mem_mb=16000,
         runtime=480,
         partition="atlas",
     shell:
-        """
-        cutadapt -j {threads} --revcomp -e 0.1 --discard-trimmed \
-            -b "AAAAAAAAAAAAAAAAAATTAACGGAGGAGGAGGA;min_overlap=34" \
-            -b "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT;min_overlap=40" \
-            {input} > {output} 2> {log}
-        """
-
-
-rule trim_adapter:
-    input:
-        "results/{genotype}/filtered/{sample}.fastq",
-    output:
-        "results/{genotype}/trimmed_filtered/{sample}.fastq",
-    log:
-        "logs/trim_adapter/{genotype}/{sample}.log",
-    threads: 12
-    resources:
-        mem_mb=16000,
-        runtime=480,
-        partition="atlas",
-    shell:
-        """
-        cutadapt -j {threads} --revcomp -e 0.1 \
-            -a "AAAAAAAAAAAAAAAAAATTAACGGAGGAGGAGGA;min_overlap=16" \
-            -g "AAAAAAAAAAAAAAAAAATTAACGGAGGAGGAGGA;min_overlap=16" \
-            -a "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT;min_overlap=16" \
-            -g "ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT;min_overlap=16" \
-            {input} > {output} 2> {log}
-        """
+        "HiFiAdapterFilt.sh -b {input} -p {threads} -o {params.outdir} 2> {log}"
 
 
 rule assemble_contigs:
     input:
-        get_trimmed_fastqs,
+        get_filtered_fastqs,
     output:
         "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.gfa",
     params:
@@ -135,7 +93,7 @@ localrules: approve_cutoffs
 rule map_reads_for_purge:
     input:
         assembly="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
-        reads=get_trimmed_fastqs,
+        reads=get_filtered_fastqs,
     output:
         paf="results/{genotype}/purge_dups/aln.paf.gz",
     log:

@@ -1,0 +1,27 @@
+name: wheat-assembly
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # workflow
+  - snakemake
+  - snakemake-executor-plugin-cluster-generic
+  # adapter filtering
+  - hifiadapterfilt
+  # assembly
+  - hifiasm
+  # purge_dups suite (pbcstat, calcuts, hist_plot.py, split_fa, purge_dups, get_seqs)
+  - purge-dups
+  # alignment
+  - minimap2
+  # scaffolding
+  - ragtag
+  # coverage plotting (R)
+  - r-base
+  - r-gggenomes
+  - r-ggplot2
+  - r-dplyr
+  - r-tidyr
+  - r-readr
+  - bioconductor-iranges
