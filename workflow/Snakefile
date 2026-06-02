@@ -112,20 +112,70 @@ rule assemble_contigs:
         "hifiasm -t {threads} -l0 -i -f38 -o {params.prefix} {input} 2> {log}"
 
 
-rule extract_fasta:
+rule gfa_to_fasta:
     input:
         "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.gfa",
     output:
-        "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fasta",
+        "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
     log:
-        "logs/extract_fasta/{genotype}.log",
+        "logs/gfa_to_fasta/{genotype}.log",
+    threads: 1
     resources:
-        mem_mb=4000,
-        runtime=30,
-        partition="atlas",
+        mem_mb=8000,
+        runtime=120,
     shell:
-        "python workflow/scripts/gfa_to_fasta.py {input} {output} 2> {log}"
+        r"""
+        awk '/^S/{{print ">"$2"\n"$3}}' {input} > {output} 2> {log}
+        """
 
+
+rule purge_dups:
+    input:
+        assembly="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
+        reads=get_trimmed_fastqs,
+    output:
+        purged="results/{genotype}/purge_dups/purged.fa",
+        haplotigs="results/{genotype}/purge_dups/hap.fa",
+        cutoffs="results/{genotype}/purge_dups/cutoffs",
+        hist="results/{genotype}/purge_dups/PB.cov.hist.png",
+        stat="results/{genotype}/purge_dups/PB.stat",
+    params:
+        outdir="results/{genotype}/purge_dups",
+    log:
+        "logs/purge_dups/{genotype}.log",
+    threads: 48
+    resources:
+        mem_mb=512000,
+        runtime=4320,
+        partition="bigmem",
+    shell:
+        r"""
+        ASM=$(realpath {input.assembly})
+        LOG=$(realpath {log})
+        READS=$(for f in {input.reads}; do realpath $f; done | tr '\n' ' ')
+        mkdir -p {params.outdir}
+        cd {params.outdir}
+
+        # 1. Map HiFi reads to assembly
+        minimap2 -t {threads} -xmap-hifi "$ASM" $READS 2>> "$LOG" \
+            | gzip -c > aln.paf.gz
+
+        # 2. Coverage stats + auto cutoffs
+        pbcstat aln.paf.gz 2>> "$LOG"
+        calcuts PB.stat > cutoffs 2>> "$LOG"
+        hist_plot.py -c cutoffs PB.stat PB.cov.hist.png 2>> "$LOG"
+
+        # 3. Self-alignment
+        split_fa "$ASM" > assembly.split 2>> "$LOG"
+        minimap2 -t {threads} -xasm5 -DP assembly.split assembly.split 2>> "$LOG" \
+            | gzip -c > self.paf.gz
+
+        # 4. Identify haplotigs
+        purge_dups -2 -T cutoffs -c PB.base.cov self.paf.gz > dups.bed 2>> "$LOG"
+
+        # 5. Extract purged primary + haplotig sequences
+        get_seqs -e dups.bed "$ASM" 2>> "$LOG"
+        """
 
 rule scaffold_contigs:
     input:
