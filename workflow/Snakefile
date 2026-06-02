@@ -129,57 +129,140 @@ rule gfa_to_fasta:
         """
 
 
-rule purge_dups:
+localrules: approve_cutoffs
+
+
+rule map_reads_for_purge:
     input:
         assembly="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
         reads=get_trimmed_fastqs,
     output:
-        purged="results/{genotype}/purge_dups/purged.fa",
-        haplotigs="results/{genotype}/purge_dups/hap.fa",
-        cutoffs="results/{genotype}/purge_dups/cutoffs",
-        hist="results/{genotype}/purge_dups/PB.cov.hist.png",
-        stat="results/{genotype}/purge_dups/PB.stat",
-    params:
-        outdir="results/{genotype}/purge_dups",
+        paf="results/{genotype}/purge_dups/aln.paf.gz",
     log:
-        "logs/purge_dups/{genotype}.log",
+        "logs/purge_dups/{genotype}_map_reads.log",
     threads: 48
     resources:
         mem_mb=512000,
-        runtime=4320,
+        runtime=2880,
         partition="bigmem",
     shell:
-        r"""
-        ASM=$(realpath {input.assembly})
+        "minimap2 -t {threads} -xmap-hifi {input.assembly} {input.reads} 2> {log} "
+        "| gzip -c > {output.paf}"
+
+
+rule calc_coverage_cutoffs:
+    input:
+        paf="results/{genotype}/purge_dups/aln.paf.gz",
+    output:
+        stat="results/{genotype}/purge_dups/PB.stat",
+        cov="results/{genotype}/purge_dups/PB.base.cov",
+        cutoffs="results/{genotype}/purge_dups/cutoffs",
+        hist="results/{genotype}/purge_dups/PB.cov.hist.png",
+    params:
+        outdir="results/{genotype}/purge_dups",
+    log:
+        "logs/purge_dups/{genotype}_calc_cutoffs.log",
+    threads: 1
+    resources:
+        mem_mb=16000,
+        runtime=120,
+    shell:
+        """
         LOG=$(realpath {log})
-        READS=$(for f in {input.reads}; do realpath $f; done | tr '\n' ' ')
-        mkdir -p {params.outdir}
         cd {params.outdir}
-
-        # 1. Map HiFi reads to assembly
-        minimap2 -t {threads} -xmap-hifi "$ASM" $READS 2>> "$LOG" \
-            | gzip -c > aln.paf.gz
-
-        # 2. Coverage stats + auto cutoffs
-        pbcstat aln.paf.gz 2>> "$LOG"
+        pbcstat aln.paf.gz 2> "$LOG"
         calcuts PB.stat > cutoffs 2>> "$LOG"
         hist_plot.py -c cutoffs PB.stat PB.cov.hist.png 2>> "$LOG"
+        """
 
-        # 3. Self-alignment
-        split_fa "$ASM" > assembly.split 2>> "$LOG"
-        minimap2 -t {threads} -xasm5 -DP assembly.split assembly.split 2>> "$LOG" \
-            | gzip -c > self.paf.gz
 
-        # 4. Identify haplotigs
-        purge_dups -2 -T cutoffs -c PB.base.cov self.paf.gz > dups.bed 2>> "$LOG"
+rule self_align_assembly:
+    input:
+        assembly="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
+    output:
+        split=temp("results/{genotype}/purge_dups/assembly.split"),
+        paf="results/{genotype}/purge_dups/self.paf.gz",
+    log:
+        "logs/purge_dups/{genotype}_self_align.log",
+    threads: 48
+    resources:
+        mem_mb=512000,
+        runtime=2880,
+        partition="bigmem",
+    shell:
+        """
+        split_fa {input.assembly} > {output.split} 2> {log}
+        minimap2 -t {threads} -xasm5 -DP {output.split} {output.split} 2>> {log} \
+            | gzip -c > {output.paf}
+        """
 
-        # 5. Extract purged primary + haplotig sequences
-        get_seqs -e dups.bed "$ASM" 2>> "$LOG"
+
+rule approve_cutoffs:
+    input:
+        hist="results/{genotype}/purge_dups/PB.cov.hist.png",
+    output:
+        "results/{genotype}/purge_dups/.cutoffs_approved",
+    shell:
+        """
+        echo "=== MANUAL STEP REQUIRED ==="
+        echo "Inspect: {input.hist}"
+        echo "Optionally edit: results/{wildcards.genotype}/purge_dups/cutoffs"
+        echo "Then run: touch {output}"
+        echo "Then re-run Snakemake to continue."
+        exit 1
+        """
+
+
+rule identify_haplotigs:
+    input:
+        cov="results/{genotype}/purge_dups/PB.base.cov",
+        cutoffs="results/{genotype}/purge_dups/cutoffs",
+        self_paf="results/{genotype}/purge_dups/self.paf.gz",
+        approved="results/{genotype}/purge_dups/.cutoffs_approved",
+    output:
+        dups="results/{genotype}/purge_dups/dups.bed",
+    params:
+        outdir="results/{genotype}/purge_dups",
+    log:
+        "logs/purge_dups/{genotype}_identify_haplotigs.log",
+    threads: 1
+    resources:
+        mem_mb=16000,
+        runtime=120,
+    shell:
+        """
+        LOG=$(realpath {log})
+        cd {params.outdir}
+        purge_dups -2 -T cutoffs -c PB.base.cov self.paf.gz > dups.bed 2> "$LOG"
+        """
+
+
+rule extract_purged_seqs:
+    input:
+        dups="results/{genotype}/purge_dups/dups.bed",
+        assembly="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
+    output:
+        purged="results/{genotype}/purge_dups/purged.fa",
+        hap="results/{genotype}/purge_dups/hap.fa",
+    params:
+        outdir="results/{genotype}/purge_dups",
+    log:
+        "logs/purge_dups/{genotype}_extract_purged.log",
+    threads: 1
+    resources:
+        mem_mb=16000,
+        runtime=120,
+    shell:
+        """
+        LOG=$(realpath {log})
+        ASM=$(realpath {input.assembly})
+        cd {params.outdir}
+        get_seqs -e dups.bed "$ASM" 2> "$LOG"
         """
 
 rule scaffold_contigs:
     input:
-        contigs="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fasta",
+        contigs="results/{genotype}/purge_dups/purged.fa",
         ref=RAGTAG_REF,
     output:
         multiext(
