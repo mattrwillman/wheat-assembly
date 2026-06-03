@@ -19,7 +19,7 @@ dependencies:
   - ragtag
   # assembly QC
   - assembly-stats
-  - busco =6.0
+  - busco >=5.4  # odb12 dataset support requires 5.4+
   # coverage plotting (R)
   - r-base
   - r-gggenomes
