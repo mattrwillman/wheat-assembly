@@ -64,7 +64,7 @@ rule hifiadapterfilt:
         "logs/hifiadapterfilt/{genotype}/{sample}.log",
     threads: 12
     resources:
-        mem_mb=16000,
+        mem_mb=16000,   # BLAST-based adapter scan; not memory-intensive
         runtime=480,
         partition="atlas",
     shell:
@@ -82,7 +82,7 @@ rule assemble_contigs:
         "logs/assemble_contigs/{genotype}.log",
     threads: 48
     resources:
-        mem_mb=1536000,
+        mem_mb=1536000,  # hexaploid wheat assembly (~16 Gb); observed ~300–600 GB in practice; ceiling set conservatively to avoid OOM
         runtime=10080,
         partition="bigmem",
     shell:
@@ -98,7 +98,7 @@ rule gfa_to_fasta:
         "logs/gfa_to_fasta/{genotype}.log",
     threads: 1
     resources:
-        mem_mb=8000,
+        mem_mb=8000,    # localrule; streaming awk buffers one contig at a time, well under 1 GB
         runtime=120,
     shell:
         r"""
@@ -116,9 +116,9 @@ rule map_reads_for_purge:
         "logs/purge_dups/{genotype}_map_reads.log",
     threads: 48
     resources:
-        mem_mb=512000,
+        mem_mb=512000,  # CANDIDATE FOR REDUCTION: minimap2 index for 16 Gb assembly is ~30–50 GB; 64–128 GB on atlas likely sufficient
         runtime=2880,
-        partition="bigmem",
+        partition="bigmem",  # consider atlas if mem_mb is lowered
     shell:
         "minimap2 -t {threads} -xmap-hifi {input.assembly} {input.reads} 2> {log} "
         "| gzip -c > {output.paf}"
@@ -138,7 +138,7 @@ rule calc_coverage_cutoffs:
         "logs/purge_dups/{genotype}_calc_cutoffs.log",
     threads: 1
     resources:
-        mem_mb=16000,
+        mem_mb=16000,   # pbcstat/calcuts stream the PAF; coverage histogram fits in a few GB
         runtime=120,
     shell:
         """
@@ -160,9 +160,9 @@ rule self_align_assembly:
         "logs/purge_dups/{genotype}_self_align.log",
     threads: 48
     resources:
-        mem_mb=512000,
+        mem_mb=512000,  # CANDIDATE FOR REDUCTION: split_fa produces ~10 kb chunks; minimap2 self-index ~30–50 GB; 64–128 GB on atlas likely sufficient
         runtime=2880,
-        partition="bigmem",
+        partition="bigmem",  # consider atlas if mem_mb is lowered
     shell:
         """
         split_fa {input.assembly} > {output.split} 2> {log}
@@ -201,7 +201,7 @@ rule identify_haplotigs:
         "logs/purge_dups/{genotype}_identify_haplotigs.log",
     threads: 1
     resources:
-        mem_mb=16000,
+        mem_mb=16000,   # purge_dups graph traversal on dups.bed; lightweight
         runtime=120,
     shell:
         """
@@ -224,7 +224,7 @@ rule extract_purged_seqs:
         "logs/purge_dups/{genotype}_extract_purged.log",
     threads: 1
     resources:
-        mem_mb=16000,
+        mem_mb=16000,   # get_seqs streams assembly FASTA; peak usage is one contig in memory
         runtime=120,
     shell:
         """
@@ -249,7 +249,7 @@ rule busco_purged:
         "logs/busco/{genotype}_purged.log",
     threads: 48
     resources:
-        mem_mb=128000,
+        mem_mb=128000,  # Metaeuk gene prediction on 16 Gb genome; increase to 256 GB if job OOMs
         runtime=2880,
         partition="atlas",
     shell:
@@ -279,7 +279,7 @@ rule scaffold_contigs:
         "logs/scaffold_contigs/{genotype}.log",
     threads: 48
     resources:
-        mem_mb=250000,
+        mem_mb=250000,  # --mm2-params '-I 200g' forces entire 16 Gb reference into one minimap2 index chunk (~200 GB); bigmem required
         runtime=2880,
         partition="bigmem",
     shell:
@@ -330,7 +330,7 @@ rule plot_coverage:
     log:
         "logs/plot_coverage/{genotype}.log",
     resources:
-        mem_mb=16000,
+        mem_mb=16000,   # R + gggenomes reading scaffold PAF; sufficient for wheat-scale data
         runtime=60,
         partition="atlas",
     shell:
@@ -351,7 +351,7 @@ rule busco_scaffold:
         "logs/busco/{genotype}_scaffold.log",
     threads: 48
     resources:
-        mem_mb=128000,
+        mem_mb=128000,  # Metaeuk gene prediction on 16 Gb genome; increase to 256 GB if job OOMs
         runtime=2880,
         partition="atlas",
     shell:
