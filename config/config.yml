@@ -13,3 +13,5 @@ genotypes:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/LA03136E71"
   MO080104:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/MO080104/Bam"
+  GA06493-13LE6:
+    pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/GA06493-13LE6/"
