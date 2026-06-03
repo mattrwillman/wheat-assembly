@@ -1,9 +1,7 @@
 ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
 
-# BUSCO lineage dataset name — version-sensitive:
-#   poales_odb10  BUSCO v5, OrthoDB v10 (older installs)
-#   poales_odb12  BUSCO v5.4+, OrthoDB v12 (newer installs — check with: busco --list-datasets)
-busco_lineage: "poales_odb10"
+# BUSCO lineage dataset — OrthoDB v12 required for BUSCO 6.0
+busco_lineage: "poales_odb12"
 busco_download_path: "busco_downloads"
 
 genotypes:

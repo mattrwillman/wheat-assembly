@@ -19,7 +19,7 @@ dependencies:
   - ragtag
   # assembly QC
   - assembly-stats
-  - busco
+  - busco =6.0
   # coverage plotting (R)
   - r-base
   - r-gggenomes

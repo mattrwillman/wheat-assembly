@@ -10,7 +10,7 @@ for gt in GENOTYPES:
     wc = glob_wildcards(config['genotypes'][gt]['pacbio_dir'] + "/{sample}.bam")
     GENOTYPE_SAMPLES[gt] = wc.sample
 
-BUSCO_LINEAGE = config.get('busco_lineage', 'poales_odb10')
+BUSCO_LINEAGE = config.get('busco_lineage', 'poales_odb12')
 
 
 def get_bam(wildcards):
