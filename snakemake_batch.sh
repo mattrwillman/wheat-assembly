@@ -13,4 +13,4 @@ source activate /project/gbru_wheat2/conda/wheat_assembly_env
 mkdir -p logs
 LOG="logs/snakemake_$(date +%Y%m%d_%H%M%S).log"
 
-snakemake --profile profiles/slurm --configfile config/config.yml 2>&1 | tee "$LOG"
+snakemake --profile profiles/slurm 2>&1 | tee "$LOG"
