@@ -8,7 +8,7 @@
 #   tmux ls                    list active sessions
 
 module load miniconda3
-source activate /project/gbru_wheat2/conda/assembly_env
+source activate /project/gbru_wheat2/conda/wheat_assembly_env
 
 mkdir -p logs
 LOG="logs/snakemake_$(date +%Y%m%d_%H%M%S).log"

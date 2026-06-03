@@ -16,7 +16,7 @@ Snakemake workflow for assembling wheat genomes from PacBio HiFi reads and scaff
 1. Create the conda environment:
 
 ```bash
-conda env create -f environment.yml
+conda env create -f environment.yml -p /project/gbru_wheat2/conda/wheat_assembly_env
 ```
 
 2. Edit `config/config.yml`:
@@ -35,7 +35,7 @@ BAM files are discovered automatically via glob from each `pacbio_dir`.
 
 ```bash
 module load miniconda3
-source activate /path/to/env
+source activate /project/gbru_wheat2/conda/wheat_assembly_env
 busco --download_path busco_downloads --download poales_odb12
 ```
 
@@ -64,7 +64,7 @@ This activates the conda environment and submits each rule as a separate SLURM j
 ## Running locally
 
 ```bash
-source activate /project/gbru_wheat2/conda/assembly_env
+source activate /project/gbru_wheat2/conda/wheat_assembly_env
 snakemake --cores all --configfile config/config.yml
 ```
 
