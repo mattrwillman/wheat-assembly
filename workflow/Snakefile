@@ -1,5 +1,7 @@
 import os
 
+configfile: "config/config.yaml"
+
 RAGTAG_REF = config['ragtag_ref']
 GENOTYPES  = list(config['genotypes'].keys())
 
@@ -7,6 +9,8 @@ GENOTYPE_SAMPLES = {}
 for gt in GENOTYPES:
     wc = glob_wildcards(config['genotypes'][gt]['pacbio_dir'] + "/{sample}.bam")
     GENOTYPE_SAMPLES[gt] = wc.sample
+
+BUSCO_LINEAGE = config.get('busco_lineage', 'poales_odb10')
 
 
 def get_bam(wildcards):
@@ -26,10 +30,25 @@ onstart:
     shell("mkdir -p logs/slurm")
 
 
+localrules: approve_cutoffs, gfa_to_fasta, rename_assembly, assembly_stats_raw, assembly_stats_purged
+
+
 rule all:
     input:
         expand("results/{genotype}.ragtag.scaffold.fa", genotype=GENOTYPES),
         expand("results/plots/{genotype}_ragtag_alignment_coverage.png", genotype=GENOTYPES),
+        [f"results/{gt}/hifiadapterfilt/{s}.stats"
+         for gt in GENOTYPES for s in GENOTYPE_SAMPLES[gt]],
+        expand("results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.stats.txt", genotype=GENOTYPES),
+        expand("results/{genotype}/purge_dups/purged.stats.txt", genotype=GENOTYPES),
+        expand(
+            "results/{genotype}/busco/purged/short_summary.specific." + BUSCO_LINEAGE + ".purged.txt",
+            genotype=GENOTYPES,
+        ),
+        expand(
+            "results/{genotype}/busco/scaffold/short_summary.specific." + BUSCO_LINEAGE + ".scaffold.txt",
+            genotype=GENOTYPES,
+        ),
 
 
 rule hifiadapterfilt:
@@ -56,7 +75,7 @@ rule assemble_contigs:
     input:
         get_filtered_fastqs,
     output:
-        "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.gfa",
+        temp("results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.gfa"),
     params:
         prefix="results/{genotype}/hifiasm/hifiasm.asm",
     log:
@@ -87,15 +106,12 @@ rule gfa_to_fasta:
         """
 
 
-localrules: approve_cutoffs
-
-
 rule map_reads_for_purge:
     input:
         assembly="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
         reads=get_filtered_fastqs,
     output:
-        paf="results/{genotype}/purge_dups/aln.paf.gz",
+        paf=temp("results/{genotype}/purge_dups/aln.paf.gz"),
     log:
         "logs/purge_dups/{genotype}_map_reads.log",
     threads: 48
@@ -139,7 +155,7 @@ rule self_align_assembly:
         assembly="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
     output:
         split=temp("results/{genotype}/purge_dups/assembly.split"),
-        paf="results/{genotype}/purge_dups/self.paf.gz",
+        paf=temp("results/{genotype}/purge_dups/self.paf.gz"),
     log:
         "logs/purge_dups/{genotype}_self_align.log",
     threads: 48
@@ -178,7 +194,7 @@ rule identify_haplotigs:
         self_paf="results/{genotype}/purge_dups/self.paf.gz",
         approved="results/{genotype}/purge_dups/.cutoffs_approved",
     output:
-        dups="results/{genotype}/purge_dups/dups.bed",
+        dups=temp("results/{genotype}/purge_dups/dups.bed"),
     params:
         outdir="results/{genotype}/purge_dups",
     log:
@@ -218,6 +234,30 @@ rule extract_purged_seqs:
         get_seqs -e dups.bed "$ASM" 2> "$LOG"
         """
 
+
+rule busco_purged:
+    input:
+        fa="results/{genotype}/purge_dups/purged.fa",
+    output:
+        "results/{genotype}/busco/purged/short_summary.specific." + BUSCO_LINEAGE + ".purged.txt",
+    params:
+        outdir="results/{genotype}/busco",
+        name="purged",
+        lineage=BUSCO_LINEAGE,
+        download_path=config.get('busco_download_path', 'busco_downloads'),
+    log:
+        "logs/busco/{genotype}_purged.log",
+    threads: 48
+    resources:
+        mem_mb=128000,
+        runtime=2880,
+        partition="atlas",
+    shell:
+        "busco -i {input.fa} -o {params.name} --out_path {params.outdir} "
+        "-l {params.lineage} -m genome -c {threads} "
+        "--offline --download_path {params.download_path} 2> {log}"
+
+
 rule scaffold_contigs:
     input:
         contigs="results/{genotype}/purge_dups/purged.fa",
@@ -252,12 +292,30 @@ rule rename_assembly:
         "results/{genotype}/ragtag/ragtag.scaffold.fasta",
     output:
         "results/{genotype}.ragtag.scaffold.fa",
-    resources:
-        mem_mb=4000,
-        runtime=30,
-        partition="atlas",
     shell:
-        "cp {input} {output}"
+        "ln -sf $(realpath {input}) {output}"
+
+
+rule assembly_stats_raw:
+    input:
+        "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
+    output:
+        "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.stats.txt",
+    log:
+        "logs/assembly_stats/{genotype}_raw.log",
+    shell:
+        "assembly-stats {input} > {output} 2> {log}"
+
+
+rule assembly_stats_purged:
+    input:
+        "results/{genotype}/purge_dups/purged.fa",
+    output:
+        "results/{genotype}/purge_dups/purged.stats.txt",
+    log:
+        "logs/assembly_stats/{genotype}_purged.log",
+    shell:
+        "assembly-stats {input} > {output} 2> {log}"
 
 
 rule plot_coverage:
@@ -277,3 +335,26 @@ rule plot_coverage:
         partition="atlas",
     shell:
         "Rscript workflow/scripts/plot_paf_coverage.R {input.paf} {params.prefix} 2> {log}"
+
+
+rule busco_scaffold:
+    input:
+        fa="results/{genotype}/ragtag/ragtag.scaffold.fasta",
+    output:
+        "results/{genotype}/busco/scaffold/short_summary.specific." + BUSCO_LINEAGE + ".scaffold.txt",
+    params:
+        outdir="results/{genotype}/busco",
+        name="scaffold",
+        lineage=BUSCO_LINEAGE,
+        download_path=config.get('busco_download_path', 'busco_downloads'),
+    log:
+        "logs/busco/{genotype}_scaffold.log",
+    threads: 48
+    resources:
+        mem_mb=128000,
+        runtime=2880,
+        partition="atlas",
+    shell:
+        "busco -i {input.fa} -o {params.name} --out_path {params.outdir} "
+        "-l {params.lineage} -m genome -c {threads} "
+        "--offline --download_path {params.download_path} 2> {log}"
