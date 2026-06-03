@@ -22,11 +22,10 @@ conda env create -f environment.yml -p /project/gbru_wheat2/conda/wheat_assembly
 2. Edit `config/config.yml`:
 
 ```yaml
-ragtag_ref: "/path/to/reference.fasta"
-
 genotypes:
   MyGenotype:
     pacbio_dir: "/path/to/bam/files"
+    ragtag_ref: "/path/to/reference.fasta"
 ```
 
 BAM files are discovered automatically via glob from each `pacbio_dir`.
