@@ -82,7 +82,7 @@ rule assemble_contigs:
         "logs/assemble_contigs/{genotype}.log",
     threads: 48
     resources:
-        mem_mb=1536000,  # hexaploid wheat assembly (~16 Gb); observed ~300–600 GB in practice; ceiling set conservatively to avoid OOM
+        mem_mb=768000,   # hexaploid wheat assembly (~16 Gb); observed ~300–600 GB in practice; reduced from 1536 GB to avoid monopolising the entire bigmem node
         runtime=10080,
         partition="bigmem",
     shell:
@@ -116,9 +116,9 @@ rule map_reads_for_purge:
         "logs/purge_dups/{genotype}_map_reads.log",
     threads: 48
     resources:
-        mem_mb=512000,  # CANDIDATE FOR REDUCTION: minimap2 index for 16 Gb assembly is ~30–50 GB; 64–128 GB on atlas likely sufficient
+        mem_mb=128000,  # minimap2 index for 16 Gb assembly ~30–50 GB; 128 GB comfortably fits on atlas (384 GB nodes)
         runtime=2880,
-        partition="bigmem",  # consider atlas if mem_mb is lowered
+        partition="atlas",
     shell:
         "minimap2 -t {threads} -xmap-hifi {input.assembly} {input.reads} 2> {log} "
         "| gzip -c > {output.paf}"
@@ -160,9 +160,9 @@ rule self_align_assembly:
         "logs/purge_dups/{genotype}_self_align.log",
     threads: 48
     resources:
-        mem_mb=512000,  # CANDIDATE FOR REDUCTION: split_fa produces ~10 kb chunks; minimap2 self-index ~30–50 GB; 64–128 GB on atlas likely sufficient
+        mem_mb=128000,  # minimap2 self-index same size as assembly ~30–50 GB; 128 GB comfortably fits on atlas (384 GB nodes)
         runtime=2880,
-        partition="bigmem",  # consider atlas if mem_mb is lowered
+        partition="atlas",
     shell:
         """
         split_fa {input.assembly} > {output.split} 2> {log}
@@ -279,9 +279,9 @@ rule scaffold_contigs:
         "logs/scaffold_contigs/{genotype}.log",
     threads: 48
     resources:
-        mem_mb=250000,  # --mm2-params '-I 200g' forces entire 16 Gb reference into one minimap2 index chunk (~200 GB); bigmem required
+        mem_mb=250000,  # --mm2-params '-I 200g' forces entire 16 Gb reference into one minimap2 index chunk (~200 GB); fits within atlas 384 GB nodes
         runtime=2880,
-        partition="bigmem",
+        partition="atlas",
     shell:
         "ragtag.py scaffold --mm2-params '-I 200g -x asm5' -t {threads} "
         "-o {params.outdir} {input.ref} {input.contigs} 2> {log}"
