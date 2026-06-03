@@ -60,7 +60,6 @@ rule hifiadapterfilt:
     params:
         outdir="results/{genotype}/hifiadapterfilt",
         prefix=lambda wildcards, input: os.path.splitext(os.path.basename(str(input)))[0],
-        bamdir=lambda wildcards, input: os.path.dirname(str(input)),
     log:
         "logs/hifiadapterfilt/{genotype}/{sample}.log",
     threads: 12
@@ -69,8 +68,11 @@ rule hifiadapterfilt:
         runtime=480,
         partition="atlas",
     shell:
-        "cd {params.bamdir} && bash hifiadapterfilt.sh "
-        "-p {params.prefix} -t {threads} -o $(realpath {params.outdir}) 2> $(realpath {log})"
+        """
+        ln -sf $(realpath {input}) {params.outdir}/{params.prefix}.bam
+        cd {params.outdir}
+        bash hifiadapterfilt.sh -p {params.prefix} -t {threads} -o . 2> $(realpath {log})
+        """
 
 
 rule assemble_contigs:
