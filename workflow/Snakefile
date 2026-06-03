@@ -75,7 +75,7 @@ rule assemble_contigs:
     input:
         get_filtered_fastqs,
     output:
-        temp("results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.gfa"),
+        "results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.gfa",
     params:
         prefix="results/{genotype}/hifiasm/hifiasm.asm",
     log:
@@ -111,7 +111,7 @@ rule map_reads_for_purge:
         assembly="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
         reads=get_filtered_fastqs,
     output:
-        paf=temp("results/{genotype}/purge_dups/aln.paf.gz"),
+        paf="results/{genotype}/purge_dups/aln.paf.gz",
     log:
         "logs/purge_dups/{genotype}_map_reads.log",
     threads: 48
@@ -155,7 +155,7 @@ rule self_align_assembly:
         assembly="results/{genotype}/hifiasm/hifiasm.asm.bp.p_ctg.fa",
     output:
         split=temp("results/{genotype}/purge_dups/assembly.split"),
-        paf=temp("results/{genotype}/purge_dups/self.paf.gz"),
+        paf="results/{genotype}/purge_dups/self.paf.gz",
     log:
         "logs/purge_dups/{genotype}_self_align.log",
     threads: 48
@@ -194,7 +194,7 @@ rule identify_haplotigs:
         self_paf="results/{genotype}/purge_dups/self.paf.gz",
         approved="results/{genotype}/purge_dups/.cutoffs_approved",
     output:
-        dups=temp("results/{genotype}/purge_dups/dups.bed"),
+        dups="results/{genotype}/purge_dups/dups.bed",
     params:
         outdir="results/{genotype}/purge_dups",
     log:
