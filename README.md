@@ -4,21 +4,22 @@ Snakemake workflow for assembling wheat genomes from PacBio HiFi reads and scaff
 
 ## Pipeline steps
 
-1. Convert BAM → FASTQ (`pbtk bam2fastq`)
-2. Filter and trim SMRTbell adapters (`cutadapt`)
-3. Assemble contigs (`hifiasm`)
-4. Scaffold against reference (`ragtag`)
-5. Plot alignment coverage (`gggenomes`)
+1. Filter SMRTbell adapters from BAM (`HiFiAdapterFilt`)
+2. Assemble contigs (`hifiasm`)
+3. Remove haplotigs (`purge_dups`) — pauses for manual cutoff inspection
+4. Assess completeness (`BUSCO`, `assembly-stats`)
+5. Scaffold against reference (`RagTag`)
+6. Plot alignment coverage (`gggenomes`)
 
 ## Setup
 
 1. Create the conda environment:
 
 ```bash
-conda env create -f workflow/envs/assembly_env.yml
+conda env create -f environment.yml
 ```
 
-2. Clone the repository and edit `config/config.yml`:
+2. Edit `config/config.yml`:
 
 ```yaml
 ragtag_ref: "/path/to/reference.fasta"
@@ -29,6 +30,16 @@ genotypes:
 ```
 
 BAM files are discovered automatically via glob from each `pacbio_dir`.
+
+3. Download the BUSCO dataset **from the login node** (compute nodes do not have internet access). Run this from the project root so the dataset lands where `busco_download_path` in `config/config.yml` expects it:
+
+```bash
+module load miniconda3
+source activate /path/to/env
+busco --download_path busco_downloads --download poales_odb12
+```
+
+The download is ~500 MB. If you prefer a different location (e.g. a shared project directory), update `busco_download_path` in `config/config.yml` accordingly.
 
 ## Running on Atlas (SLURM)
 
@@ -45,10 +56,10 @@ This activates the conda environment and submits each rule as a separate SLURM j
 
 | Partition | Rules |
 |-----------|-------|
-| `bigmem`  | `assemble_contigs` (1536 GB, 7 days), `scaffold_contigs` (250 GB, 2 days) |
+| `bigmem`  | `assemble_contigs` (1536 GB, 7 days) |
 | `atlas`   | all other rules |
 
-Bigmem nodes (48 cores, 1536 GB RAM) are allocated exclusively, so the full node is available to each job.
+`assemble_contigs` uses all 48 cores of a bigmem node, so the full 1536 GB is available to the job exclusively.
 
 ## Running locally
 
@@ -64,12 +75,14 @@ Results are written to `results/` namespaced by genotype:
 ```
 results/
   {genotype}/
-    fastq/
-    filtered/
-    trimmed_filtered/
+    hifiadapterfilt/
     hifiasm/
+    purge_dups/
+    busco/
+      purged/
+      scaffold/
     ragtag/
-  {genotype}.ragtag.scaffold.fa
+  {genotype}.ragtag.scaffold.fa   ← symlink to ragtag output
   plots/
     {genotype}_ragtag_alignment_coverage.pdf
     {genotype}_ragtag_alignment_coverage.png
