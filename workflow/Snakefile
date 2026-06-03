@@ -82,7 +82,7 @@ rule assemble_contigs:
         "logs/assemble_contigs/{genotype}.log",
     threads: 48
     resources:
-        mem_mb=768000,   # hexaploid wheat assembly (~16 Gb); observed ~300–600 GB in practice; reduced from 1536 GB to avoid monopolising the entire bigmem node
+        mem_mb=1536000,  # hexaploid wheat assembly (~16 Gb); observed ~300–600 GB in practice; 48 threads saturates the node so full memory is claimed
         runtime=10080,
         partition="bigmem",
     shell:
