@@ -17,6 +17,9 @@ dependencies:
   - minimap2
   # scaffolding
   - ragtag
+  # assembly QC
+  - assembly-stats
+  - busco
   # coverage plotting (R)
   - r-base
   - r-gggenomes
