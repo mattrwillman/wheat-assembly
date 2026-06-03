@@ -31,7 +31,7 @@ genotypes:
 
 BAM files are discovered automatically via glob from each `pacbio_dir`.
 
-3. Download the BUSCO dataset **from the login node** (compute nodes do not have internet access). Run this from the project root so the dataset lands where `busco_download_path` in `config/config.yml` expects it:
+3. Download the BUSCO dataset once before running the workflow. Pre-downloading avoids concurrent download conflicts if multiple genotypes start their BUSCO jobs simultaneously. Run from the project root so the dataset lands where `busco_download_path` in `config/config.yml` expects it:
 
 ```bash
 module load miniconda3
