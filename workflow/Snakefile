@@ -1,6 +1,6 @@
 import os
 
-configfile: "config/config.yaml"
+configfile: "config/config.yml"
 
 RAGTAG_REF = config['ragtag_ref']
 GENOTYPES  = list(config['genotypes'].keys())
