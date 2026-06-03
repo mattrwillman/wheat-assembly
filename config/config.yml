@@ -1,6 +1,6 @@
 # BUSCO lineage dataset — OrthoDB v12 required for BUSCO 6.0
 busco_lineage: "poales_odb12"
-busco_download_path: "busco_downloads"
+busco_download_path: "/project/gbru_wheat2/busco_downloads"
 
 genotypes:
   AGS2000:
