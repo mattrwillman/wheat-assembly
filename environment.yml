@@ -12,7 +12,7 @@ dependencies:
   # assembly
   - hifiasm
   # purge_dups suite (pbcstat, calcuts, hist_plot.py, split_fa, purge_dups, get_seqs)
-  - purge-dups
+  - purge_dups
   # alignment
   - minimap2
   # scaffolding
