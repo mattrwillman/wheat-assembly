@@ -59,6 +59,7 @@ rule hifiadapterfilt:
         blast="results/{genotype}/hifiadapterfilt/{sample}.contaminant.blastout",
     params:
         outdir="results/{genotype}/hifiadapterfilt",
+        prefix=lambda wildcards, input: os.path.splitext(str(input))[0],
     log:
         "logs/hifiadapterfilt/{genotype}/{sample}.log",
     threads: 12
@@ -67,7 +68,7 @@ rule hifiadapterfilt:
         runtime=480,
         partition="atlas",
     shell:
-        "bash hifiadapterfilt.sh -p {input} -t {threads} -o {params.outdir} 2> {log}"
+        "bash hifiadapterfilt.sh -p {params.prefix} -t {threads} -o {params.outdir} 2> {log}"
 
 
 rule assemble_contigs:
