@@ -67,7 +67,7 @@ rule hifiadapterfilt:
         runtime=480,
         partition="atlas",
     shell:
-        "bash hifiadapterfilt.sh -b {input} -p {threads} -o {params.outdir} 2> {log}"
+        "bash hifiadapterfilt.sh -p {input} -t {threads} -o {params.outdir} 2> {log}"
 
 
 rule assemble_contigs:
