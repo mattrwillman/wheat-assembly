@@ -1,5 +1,3 @@
-ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
-
 # BUSCO lineage dataset — OrthoDB v12 required for BUSCO 6.0
 busco_lineage: "poales_odb12"
 busco_download_path: "busco_downloads"
@@ -7,15 +5,22 @@ busco_download_path: "busco_downloads"
 genotypes:
   AGS2000:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/AGS2000/Bam"
+    ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
   Hilliard:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/Hilliard/Bam"
+    ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
   IL02-18228:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/IL02-18228/Bam"
+    ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
   Jagger:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/Jagger/Bam"
+    ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
   LA03136E71:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/LA03136E71"
+    ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
   MO080104:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/MO080104/Bam"
+    ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
   GA06493-13LE6:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/GA06493-13LE6/"
+    ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"

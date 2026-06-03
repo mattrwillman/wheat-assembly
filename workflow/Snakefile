@@ -2,7 +2,6 @@ import os
 
 configfile: "config/config.yml"
 
-RAGTAG_REF = config['ragtag_ref']
 GENOTYPES  = list(config['genotypes'].keys())
 
 GENOTYPE_SAMPLES = {}
@@ -261,7 +260,7 @@ rule busco_purged:
 rule scaffold_contigs:
     input:
         contigs="results/{genotype}/purge_dups/purged.fa",
-        ref=RAGTAG_REF,
+        ref=lambda wildcards: config['genotypes'][wildcards.genotype]['ragtag_ref'],
     output:
         multiext(
             "results/{genotype}/ragtag/ragtag.scaffold",
