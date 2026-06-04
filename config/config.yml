@@ -13,7 +13,7 @@ genotypes:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/IL02-18228/Bam"
     ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
   Jagger:
-    pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/Jagger/Bam"
+    pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/Jagger"
     ragtag_ref: "/project/gbru_wheat2/ref/Raz_assemblies/Gina/250925_Hilliard_pseudomolecules_v1+unanchored_contigs_filtered_chloroplast.fasta"
   LA03136E71:
     pacbio_dir: "/90daydata/gbru_wheat2/PacBio_WGS/LA03136E71"
