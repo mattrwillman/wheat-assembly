@@ -72,9 +72,10 @@ rule hifiadapterfilt:
         mkdir -p $CONDA_PREFIX/bin/HiFiAdapterFilt
         ln -sfn $CONDA_PREFIX/bin/DB $CONDA_PREFIX/bin/HiFiAdapterFilt/DB
         export PATH="$CONDA_PREFIX/bin/HiFiAdapterFilt/DB:$PATH"
+        LOG=$(realpath {log})
         ln -sf $(realpath {input}) {params.outdir}/{params.prefix}.bam
         cd {params.outdir}
-        bash hifiadapterfilt.sh -p {params.prefix} -t {threads} -o . 2> $(realpath {log})
+        bash hifiadapterfilt.sh -p {params.prefix} -t {threads} -o . 2> "$LOG"
         """
 
 
